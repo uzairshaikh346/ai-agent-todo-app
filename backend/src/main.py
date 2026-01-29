@@ -1,9 +1,39 @@
+"""
+Main FastAPI application for the AI-Powered Natural Language Chatbot for Todo Management.
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api import auth, tasks
-from src.database.engine import create_db_and_tables_async
+import structlog
+from src.database import init_db
+from src.api.chat_endpoint import router as chat_router
+from src.api.tasks_simple import router as tasks_router
 
-app = FastAPI(title="Multi-User Todo API", version="1.0.0")
+# Configure structlog
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.processors.JSONRenderer()
+    ],
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
+
+logger = structlog.get_logger()
+
+app = FastAPI(
+    title="AI-Powered Todo Chatbot API",
+    description="API for managing todos through natural language chat interface",
+    version="1.0.0"
+)
 
 # Add CORS middleware
 app.add_middleware(
@@ -16,14 +46,19 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    await create_db_and_tables_async()
-
-app.include_router(auth.router, prefix="/auth", tags=["authentication"])
-app.include_router(tasks.router, prefix="/api/{user_id}", tags=["tasks"])
+    """Initialize the database when the application starts."""
+    logger.info("Starting up application")
+    init_db()
+    logger.info("Database initialized")
 
 @app.get("/")
-def read_root():
-    return {"message": "Multi-User Todo API is running!"}
+async def root():
+    """Root endpoint for health check."""
+    return {"message": "AI-Powered Todo Chatbot API is running"}
+
+# Include API routers
+app.include_router(chat_router, prefix="/api/{user_id}", tags=["chat"])
+app.include_router(tasks_router, prefix="/api/{user_id}", tags=["tasks"])
 
 if __name__ == "__main__":
     import uvicorn

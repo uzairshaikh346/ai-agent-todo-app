@@ -1,110 +1,92 @@
-<!-- 
-Sync Impact Report:
-- Version change: 1.0.0 → 1.2.0
-- Modified principles: All principles replaced with Multi-User Todo Web App specific principles
-- Added sections: Preamble, Articles I-XI with specific content
-- Removed sections: Original placeholder principles
-- Templates requiring updates: 
-  - ✅ .specify/templates/plan-template.md - needs alignment check
-  - ✅ .specify/templates/spec-template.md - needs alignment check  
-  - ✅ .specify/templates/tasks-template.md - needs alignment check
-  - ⚠ .specify/templates/commands/*.md - needs review for outdated references
-  - ⚠ README.md - needs review for principle references
-- Follow-up TODOs: None
--->
-# Multi-User Todo Web Application Constitution
+# Multi-User Todo Web App + AI Chatbot Constitution (Spec-Kit Plus)
 
 ## Preamble
+This constitution defines the immutable architectural, technological, security, quality, and workflow principles for the entire project lifecycle. All specifications, plans, tasks, implementations, and code generation MUST comply with these rules. Any deviation requires explicit amendment with rationale, version bump, and approval.
 
-This Constitution establishes immutable architectural principles and development standards for the Multi-User Todo Web Application project. It serves as the foundational contract guiding all spec-driven development phases — from specification to implementation — and ensures consistent application of technology, quality, testing, and security requirements across features, artifacts, and generated code.
+Version: 1.0.0
+Ratified: 2026-01-20
+Last Amended: 2026-01-20
+Governed by Spec-Kit Plus (/sp.* commands) and enforced via templates in .specify/templates/
 
-## Core Principles
+## I. Project Identity & Purpose
+- Build a secure, scalable, multi-user Todo web application with natural language AI chatbot interface.
+- Core goal: Users manage todos via UI or conversational AI (using MCP tools + OpenAI Agents SDK).
+- Non-negotiable: Multi-user isolation (row-level ownership), persistent data (Neon Postgres), JWT auth, stateless services.
 
-### I. Project Identity and Purpose
-The purpose of this project is to build a secure, responsive, multi-user Todo web application using a spec-driven development workflow and modern full-stack technologies.
+## II. Technology Stack (Opinionated & Immutable)
+Frontend:
+- Next.js 16+ (App Router only)
+- OpenAI ChatKit for AI chatbot UI (custom backend connector)
 
-Non-negotiable Principles:
-- The application must support authenticated multi-user interaction.
-- Responsibilities between frontend and backend must be clearly separated.
-- All user data must persist reliably in the configured database.
+Backend:
+- FastAPI (Python 3.12+)
+- SQLModel (ORM + Pydantic models)
+- uv for venv, deps, scripts
+- Official MCP SDK for tool exposure
 
-### II. Architectural Standards
-Technology Must-Use:
-- Next.js 16.0.10 for the frontend with App Router.
-- FastAPI for the backend API layer.
-- SQLModel ORM for all database modeling.
-- Neon Serverless PostgreSQL for persistent storage.
-- Better Auth for authentication, issuing JWT tokens.
-- uv for Python environment setup, dependency management, and backend execution.
+AI Layer:
+- OpenAI Agents SDK for agent logic, tool calling, stateless runner
+- MCP tools bridge all task operations
 
-No other frameworks, languages, or tools may replace these core technologies without formal constitutional amendment.
+Database:
+- Neon Serverless PostgreSQL (serverless only)
 
-### III. Backend Environment & Initialization
-- A Python virtual environment must be created inside the backend/ folder using uv.
-- All backend dependencies (including FastAPI, SQLModel, Neon client, JWT libraries) must be installed within this virtual environment.
-- The FastAPI application must be developed, executed, and maintained inside this environment.
-- uv commands and tooling must be used to install, run, test, and manage the backend including migrations, environment setup, and execution.
-- The backend project must define a clear module structure including entrypoint (main.py), API routers, models, and authentication logic.
-- Environment variables, including database connection strings and shared JWT secrets, must be defined in a .env file and never committed to source control.
+Auth:
+- Better Auth (JWT issuance & validation)
 
-### IV. Security Principles
-- Every API endpoint must be protected by JWT authentication.
-- Backend services must validate JWT tokens on every request before performing any data operations.
-- Users must only be authorized to access, modify, or delete resources that belong to them.
-- Environment secrets (including shared JWT signing keys) must be securely stored in environment variables and not committed to version control.
+No replacements allowed without constitution amendment. No additional frameworks/languages unless explicitly added here.
 
-### V. API Conduct Rules
-- The backend API must follow REST conventions.
-- All API endpoints must include path parameters for user identification and respond with data scoped to the authenticated user.
-- Request and response formats must be documented in API spec files under the specs/api/ directory with clear examples for success and error cases.
+## III. Security & Access Control
+- ALL API endpoints (including /api/{user_id}/chat) MUST require valid JWT.
+- Extract user_id from JWT claims (Better Auth integration).
+- Row-level security: Every operation (CRUD on Task, access to Conversation/Message) MUST check task/conversation.user_id == authenticated user_id.
+- Secrets: .env only (DB URL, JWT secret) — never commit.
+- MCP tools: Stateless, always validate user_id ownership before DB ops.
+- No global/shared state in backend.
 
-### VI. Specification Governance
-- All feature work must be proposed through a dedicated specification file (.md) inside the specs/ directory.
-- Specifications must include:
-  - Feature description
-  - Success criteria
-  - Data model definitions
-  - Acceptance tests / expected behaviors
-- A feature may not proceed to implementation without a valid specification and a completed planning phase.
+## IV. Data Models & Persistence
+Core models (enforced):
+- Task: id, user_id (FK), title, description?, completed (bool), created_at, updated_at
+- Conversation: id, user_id (FK), created_at, updated_at
+- Message: id, conversation_id (FK), user_id, role ("user"|"assistant"), content, created_at, tool_calls? (JSON/array)
 
-## Additional Constraints
+All models via SQLModel. Migrations with Alembic. Timestamps auto-managed.
 
-### Quality Assurance Mandates
-- Specifications, plans, and tasks must pass constitutional compliance checks before implementation begins.
-- Qwen CLI workflows and Spec-Kit Plus tooling must enforce the quality gates defined in the project's quality assurance system.
-- No code may be marked complete without passing its specified test suite and matching the documented behavior in the specification.
+## V. API & MCP Design Rules
 
-### LLM Knowledge and Context Access
-- The project environment must provide a live connection to the MCP server containing project documentation and spec artifacts.
-- When an LLM (including Qwen CLI, Claude Code integration, or any supported assistant) is unable to understand or resolve a specification, plan, or code context, it must fallback to reading the MCP-connected documentation source before generating implementation steps or recommendations.
-- The LLM's fallback documentation sources include:
-  - MCP server documentation endpoint (configured in Spec-Kit Plus settings)
-  - The specs/ directory with markdown spec files
-  - Monorepo guidance files (e.g., CLAUDE.md, architecture specs)
-  - Project memory references as applicable
-- The LLM must not produce speculative, undocumented behaviors for:
-  - Feature requirements
-  - API behavior
-  - Data model definitions
-  without first consulting MCP or approved spec artifacts.
-- If the LLM cannot locate relevant information, it must indicate "Documentation reference required" rather than generate assumptions and list the spec sources it attempted to consult.
+- RESTful where applicable, but single stateless chat endpoint: POST /api/{user_id}/chat
+- Request: {conversation_id?, message}
+- Response: {conversation_id, response, tool_calls?}
+- MCP tools (via Official SDK):
+  - add_task(user_id, title, description?)
+  - list_tasks(user_id, status? ["all","pending","completed"])
+  - complete_task(user_id, task_id)
+  - delete_task(user_id, task_id)
+  - update_task(user_id, task_id, title?, description?)
+- Tools return: {task_id?, status, title?, tasks? (array for list)}
+- Tools MUST be stateless and DB-persisted.
 
-## Development Workflow
+## VI. Agent & Chat Behavior
+- Agent instructions: "Helpful todo assistant. Use MCP tools for actions. Always confirm changes friendly. Handle errors gracefully. Be concise."
+- Stateless cycle: Load history from DB → append user msg → run agent → tool loop → store assistant msg + tool_calls → return.
+- Conversation state in DB (Conversation + Message tables).
+- No in-memory state.
 
-### Planning and Task Standards
-- Every specification must be followed by an implementation plan generated with Spec-Kit Plus tools (e.g., /sp.plan).
-- Implementation plans must list:
-  - Technical design and rationale
-  - Database migration requirements
-  - API interface definitions
-  - Developer testing strategy
-- Implementation tasks must be atomic, testable, and traceable to the specification's success criteria.
+## VII. Development Workflow (Spec-Kit Plus Enforced)
+- All features via: /sp.specify → /sp.clarify → /sp.plan → /sp.tasks → /sp.implement
+- No manual coding outside AI-generated diffs/PRs.
+- Atomic tasks only.
+- Tests: pytest for backend/tools/endpoint, before marking complete.
+- Quality gates: Constitution compliance check before proceed.
 
-## Governance
+## VIII. Quality & Testing Mandates
+- TDD where possible (tests before impl in spec/plan).
+- 100% coverage on MCP tools & chat endpoint.
+- Error handling: User-friendly messages, no stack traces to client.
+- Logging: Structured (e.g. structlog) for tool calls & errors.
 
-- Amendments to this Constitution require a version bump and documented change record.
-- Amendments must list the rationale and all affected artifacts or standards.
-- Amendments shall be reviewed and approved before being applied to planning and implementation stages.
-- This Constitution is invoked automatically by Spec-Kit Plus tooling (e.g., /sp.constitution, /sp.plan, /sp.tasks). It is referenced by CLI commands and compliance checks at each development phase to ensure that development artifacts, code generation, tests, and implementation remain aligned with the approved project principles.
-
-**Version**: 1.2.0 | **Ratified**: 2025-01-01 | **Last Amended**: 2025-12-31
+## IX. Governance & Amendment
+- Amendment requires: /sp.constitution command, justification, version bump, team approval.
+- Versioning: MAJOR for breaking changes, MINOR for additions, PATCH for clarifications.
+- Compliance: All specs/plans/tasks must reference applicable principles.
+- Review: Quarterly governance review to assess principle effectiveness.

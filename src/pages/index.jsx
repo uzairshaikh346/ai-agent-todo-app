@@ -90,14 +90,14 @@ const LandingPage = () => {
             <a 
               href="/auth/signup"
               className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl font-semibold text-lg transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50 hover:scale-105 flex items-center gap-2"
-            >
+              >
               Start Free Today
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </a>
             <a 
               href="#features"
               className="px-8 py-4 bg-white/10 backdrop-blur-sm rounded-xl font-semibold text-lg border border-white/20 transition-all duration-300 hover:bg-white/20 hover:scale-105"
-            >
+              >
               Explore Features
             </a>
           </div>
@@ -138,10 +138,10 @@ const LandingPage = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
             <div
-              key={index}
+            key={index}
               className="group bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:border-cyan-400/50 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-cyan-500/20"
               style={{ animationDelay: `${index * 0.1}s` }}
-            >
+              >
               <div className="text-cyan-400 mb-4 group-hover:scale-110 transition-transform duration-300">
                 {feature.icon}
               </div>
@@ -164,7 +164,7 @@ const LandingPage = () => {
           <a 
             href="/auth/signup"
             className="inline-block px-10 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl font-semibold text-lg transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50 hover:scale-105"
-          >
+            >
             Get Started For Free
           </a>
         </div>
@@ -174,17 +174,17 @@ const LandingPage = () => {
         @keyframes gradient {
           0%, 100% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        @keyframes fade-in {
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            }
+            @keyframes fade-in {
           from { opacity: 0; }
           to { opacity: 1; }
-        }
-        @keyframes slide-up {
-          from { 
+          }
+          @keyframes slide-up {
+            from { 
             opacity: 0;
             transform: translateY(30px);
           }

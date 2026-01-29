@@ -1,0 +1,12 @@
+node_modules
+build
+.next
+out
+dist
+.nuxt
+coverage
+*.min.js
+*.lock
+.env*
+!.env
+!.env.example

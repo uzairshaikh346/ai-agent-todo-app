@@ -1,70 +1,166 @@
+"""
+Task service for the AI-Powered Natural Language Chatbot for Todo Management.
+Handles all business logic and database operations related to tasks.
+"""
+from typing import List, Optional
 from sqlmodel import Session, select
-from typing import Optional
 from ..models.task import Task, TaskCreate, TaskUpdate
-from ..models.user import User
-from uuid import UUID
+from ..utils.logging import get_logger
+import structlog
+
+logger = get_logger(__name__)
 
 class TaskService:
-    @staticmethod
-    def create_task(session: Session, user_id: UUID, task_create: TaskCreate) -> Task:
-        """Create a new task for a user"""
-        db_task = Task(**task_create.dict(), user_id=user_id)
-        session.add(db_task)
-        session.commit()
-        session.refresh(db_task)
-        return db_task
+    """
+    Service class for handling task operations.
+    """
 
-    @staticmethod
-    def get_tasks_by_user(session: Session, user_id: UUID) -> list[Task]:
-        """Get all tasks for a specific user"""
-        statement = select(Task).where(Task.user_id == user_id)
-        tasks = session.exec(statement).all()
-        return tasks
+    def create_task(self, db_session: Session, user_id: str, task_create: TaskCreate) -> Task:
+        """
+        Create a new task for a user.
 
-    @staticmethod
-    def get_task_by_id(session: Session, task_id: int, user_id: UUID) -> Optional[Task]:
-        """Get a specific task by ID for a user"""
-        statement = select(Task).where(Task.id == task_id, Task.user_id == user_id)
-        task = session.exec(statement).first()
+        Args:
+            db_session: Database session
+            user_id: ID of the user creating the task
+            task_create: Task creation data
+
+        Returns:
+            Created Task object
+        """
+        logger.info("Creating task", user_id=user_id, title=task_create.title)
+
+        # Validate input
+        if not task_create.title.strip():
+            raise ValueError("Task title cannot be empty")
+
+        # Create task object
+        task = Task(
+            title=task_create.title,
+            description=task_create.description,
+            completed=task_create.completed,
+            user_id=user_id
+        )
+
+        # Add to database
+        db_session.add(task)
+        db_session.commit()
+        db_session.refresh(task)
+
+        logger.info("Task created successfully", task_id=task.id, user_id=user_id)
         return task
 
-    @staticmethod
-    def update_task(session: Session, task_id: int, user_id: UUID, task_update: TaskUpdate) -> Optional[Task]:
-        """Update a specific task for a user"""
-        db_task = TaskService.get_task_by_id(session, task_id, user_id)
-        if not db_task:
-            return None
+    def get_task_by_id_and_user(self, db_session: Session, task_id: int, user_id: str) -> Optional[Task]:
+        """
+        Get a specific task by its ID and user ID.
 
-        # Update only the fields that are provided
+        Args:
+            db_session: Database session
+            task_id: ID of the task
+            user_id: ID of the user
+
+        Returns:
+            Task object if found and belongs to user, None otherwise
+        """
+        logger.info("Fetching task by ID and user", task_id=task_id, user_id=user_id)
+
+        statement = select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
+        task = db_session.exec(statement).first()
+
+        if task:
+            logger.info("Task found", task_id=task.id, user_id=user_id)
+        else:
+            logger.info("Task not found or doesn't belong to user", task_id=task_id, user_id=user_id)
+
+        return task
+
+    def get_tasks_by_user_id(self, db_session: Session, user_id: str, completed: Optional[bool] = None) -> List[Task]:
+        """
+        Get all tasks for a user, optionally filtered by completion status.
+
+        Args:
+            db_session: Database session
+            user_id: ID of the user
+            completed: Filter by completion status (None for all, True for completed, False for pending)
+
+        Returns:
+            List of Task objects
+        """
+        logger.info("Fetching tasks by user", user_id=user_id, completed_filter=completed)
+
+        statement = select(Task).where(Task.user_id == user_id)
+
+        if completed is not None:
+            statement = statement.where(Task.completed == completed)
+
+        tasks = db_session.exec(statement).all()
+
+        logger.info("Tasks fetched successfully", user_id=user_id, task_count=len(tasks))
+        return tasks
+
+    def update_task(self, db_session: Session, task_id: int, user_id: str, task_update: TaskUpdate) -> Task:
+        """
+        Update a task for a user.
+
+        Args:
+            db_session: Database session
+            task_id: ID of the task to update
+            user_id: ID of the user
+            task_update: Task update data
+
+        Returns:
+            Updated Task object
+        """
+        logger.info("Updating task", task_id=task_id, user_id=user_id)
+
+        # Get the task
+        statement = select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
+        task = db_session.exec(statement).first()
+
+        if not task:
+            raise ValueError(f"Task {task_id} not found or doesn't belong to user {user_id}")
+
+        # Update the task with provided values
         update_data = task_update.dict(exclude_unset=True)
         for field, value in update_data.items():
-            setattr(db_task, field, value)
+            setattr(task, field, value)
 
-        session.add(db_task)
-        session.commit()
-        session.refresh(db_task)
-        return db_task
+        # Update timestamp
+        from datetime import datetime
+        task.updated_at = datetime.utcnow()
 
-    @staticmethod
-    def delete_task(session: Session, task_id: int, user_id: UUID) -> bool:
-        """Delete a specific task for a user"""
-        db_task = TaskService.get_task_by_id(session, task_id, user_id)
-        if not db_task:
+        # Commit changes
+        db_session.add(task)
+        db_session.commit()
+        db_session.refresh(task)
+
+        logger.info("Task updated successfully", task_id=task.id, user_id=user_id)
+        return task
+
+    def delete_task(self, db_session: Session, task_id: int, user_id: str) -> bool:
+        """
+        Delete a task for a user.
+
+        Args:
+            db_session: Database session
+            task_id: ID of the task to delete
+            user_id: ID of the user
+
+        Returns:
+            True if deletion was successful, False otherwise
+        """
+        logger.info("Deleting task", task_id=task_id, user_id=user_id)
+
+        # Get the task
+        statement = select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
+        task = db_session.exec(statement).first()
+
+        if not task:
+            logger.warning("Attempted to delete non-existent task", task_id=task_id, user_id=user_id)
             return False
 
-        session.delete(db_task)
-        session.commit()
+        # Delete the task
+        db_session.delete(task)
+        db_session.commit()
+
+        logger.info("Task deleted successfully", task_id=task_id, user_id=user_id)
         return True
-
-    @staticmethod
-    def toggle_task_completion(session: Session, task_id: int, user_id: UUID) -> Optional[Task]:
-        """Toggle the completion status of a task"""
-        db_task = TaskService.get_task_by_id(session, task_id, user_id)
-        if not db_task:
-            return None
-
-        db_task.completed = not db_task.completed
-        session.add(db_task)
-        session.commit()
-        session.refresh(db_task)
-        return db_task
