@@ -1,7 +1,7 @@
 // frontend/src/services/api.js
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://uzairshaikh-todo-app.hf.space';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 console.log('API Base URL:', API_BASE_URL);
 

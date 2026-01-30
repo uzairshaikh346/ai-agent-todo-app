@@ -30,7 +30,6 @@ env/
 .venv/
 .env/
 .ENV/
-*/
 
 # Backend
 backend/.venv/
