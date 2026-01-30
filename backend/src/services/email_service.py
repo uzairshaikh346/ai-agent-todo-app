@@ -12,8 +12,8 @@ FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 
 class EmailService:
     @staticmethod
-    def send_password_reset_email(to_email: str, reset_token: str) -> bool:
-        """Send password reset email"""
+    def send_password_reset_email(to_email: str, reset_token: str) -> dict:
+        """Send password reset email. Returns dict with success status and reset_link on failure."""
         reset_link = f"{FRONTEND_URL}/auth/reset-password?token={reset_token}"
 
         try:
@@ -47,12 +47,12 @@ class EmailService:
 
             response = resend.Emails.send(params)
             print(f"Email sent successfully: {response}")
-            return True
+            return {"success": True, "reset_link": None}
         except Exception as e:
             print(f"Failed to send email: {e}")
-            # Log to console for development
+            # Return reset link for development/testing when email fails
             print(f"\n{'='*50}")
             print(f"PASSWORD RESET LINK (dev mode):")
             print(f"{reset_link}")
             print(f"{'='*50}\n")
-            return False
+            return {"success": False, "reset_link": reset_link}

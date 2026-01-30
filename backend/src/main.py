@@ -7,6 +7,7 @@ import structlog
 from src.database import init_db
 from src.api.chat_endpoint import router as chat_router
 from src.api.tasks_simple import router as tasks_router
+from src.api.auth import router as auth_router
 
 # Configure structlog
 structlog.configure(
@@ -57,6 +58,7 @@ async def root():
     return {"message": "AI-Powered Todo Chatbot API is running"}
 
 # Include API routers
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(chat_router, prefix="/api/{user_id}", tags=["chat"])
 app.include_router(tasks_router, prefix="/api/{user_id}", tags=["tasks"])
 

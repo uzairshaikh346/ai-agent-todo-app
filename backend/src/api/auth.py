@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from typing import Optional
 from pydantic import BaseModel, field_validator
-from ..database.engine import get_session
+from ..database import get_session
 from ..models.user import User, UserCreate, UserRead
 from ..models.password_reset import PasswordResetToken
 from ..services.auth_service import AuthService
@@ -107,10 +107,17 @@ def forgot_password(request: ForgotPasswordRequest, session: Session = Depends(g
     session.add(reset_token)
     session.commit()
 
-    # Send email
-    EmailService.send_password_reset_email(user.email, reset_token.token)
+    # Send email (returns reset_link if email fails - useful for testing)
+    email_result = EmailService.send_password_reset_email(user.email, reset_token.token)
 
-    return {"message": "If an account with that email exists, a password reset link has been sent."}
+    if email_result["success"]:
+        return {"message": "Password reset link has been sent to your email."}
+    else:
+        # Return reset link when email fails (for development/testing)
+        return {
+            "message": "Email service unavailable. Use the link below to reset your password.",
+            "reset_link": email_result["reset_link"]
+        }
 
 
 @router.post("/reset-password")

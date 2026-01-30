@@ -7,6 +7,7 @@ const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [resetLink, setResetLink] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -14,10 +15,14 @@ const ForgotPasswordPage = () => {
     setLoading(true);
     setError('');
     setMessage('');
+    setResetLink('');
 
     try {
       const response = await api.post('/auth/forgot-password', { email });
       setMessage(response.data.message);
+      if (response.data.reset_link) {
+        setResetLink(response.data.reset_link);
+      }
       setEmail('');
     } catch (err) {
       setError(err.response?.data?.detail || 'Something went wrong. Please try again.');
@@ -55,11 +60,24 @@ const ForgotPasswordPage = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-white/10 backdrop-blur-lg py-8 px-4 shadow-2xl sm:rounded-2xl sm:px-10 border border-white/20">
           {message && (
-            <div className="mb-4 p-4 bg-green-500/20 border border-green-500/30 text-green-300 rounded-xl flex items-center gap-3">
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{message}</span>
+            <div className="mb-4 p-4 bg-green-500/20 border border-green-500/30 text-green-300 rounded-xl">
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{message}</span>
+              </div>
+              {resetLink && (
+                <div className="mt-3 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                  <p className="text-sm text-blue-300 mb-2">Click below to reset your password:</p>
+                  <a
+                    href={resetLink}
+                    className="text-blue-400 hover:text-blue-300 underline break-all text-sm"
+                  >
+                    Reset Password
+                  </a>
+                </div>
+              )}
             </div>
           )}
 

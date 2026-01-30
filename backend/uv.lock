@@ -1490,6 +1490,7 @@ source = { editable = "." }
 dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
+    { name = "bcrypt" },
     { name = "better-exceptions" },
     { name = "fastapi" },
     { name = "mcp" },
@@ -1522,6 +1523,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.13.1" },
     { name = "asyncpg", specifier = ">=0.29.0" },
+    { name = "bcrypt", specifier = ">=4.0.0" },
     { name = "better-exceptions", specifier = ">=0.3.3" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.11.0" },
     { name = "fastapi", specifier = ">=0.104.1" },

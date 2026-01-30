@@ -1,5 +1,5 @@
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, List
+from sqlmodel import SQLModel, Field
+from typing import Optional
 from datetime import datetime
 import uuid
 
@@ -11,9 +11,6 @@ class User(UserBase, table=True):
     password_hash: str = Field(nullable=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-    # Relationship to tasks
-    tasks: List["Task"] = Relationship(back_populates="user")
 
 from pydantic import field_validator
 
